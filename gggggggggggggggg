@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>วงล้อประจำตัวอาฉีลี่ 💜</title>
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        text-align: center;
+        background: linear-gradient(135deg, #1d1b2e 0%, #2d1b3d 100%);
+        color: white;
+        padding: 20px;
+        min-height: 100vh;
+        margin: 0;
+    }
+    h1 {
+        font-size: 2.5em;
+        margin: 20px 0;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+    p {
+        font-size: 1.2em;
+        color: #d9b3ff;
+    }
+    #spinCount {
+        font-size: 1.1em;
+        color: #ffd700;
+        margin-top: 10px;
+        font-weight: bold;
+    }
+    #wheelContainer {
+        position: relative;
+        display: inline-block;
+        margin-top: 20px;
+    }
+    #pointer {
+        position: absolute;
+        top: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 20px solid transparent;
+        border-right: 20px solid transparent;
+        border-top: 35px solid #ffd700;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        z-index: 10;
+    }
+    canvas {
+        border-radius: 50%;
+        box-shadow: 0 8px 30px rgba(160, 32, 240, 0.5);
+    }
+    .button-group {
+        margin-top: 30px;
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    button {
+        padding: 15px 40px;
+        font-size: 18px;
+        font-weight: bold;
+        border: none;
+        border-radius: 25px;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    #spinBtn {
+        background: linear-gradient(135deg, #a020f0 0%, #d946ef 100%);
+        box-shadow: 0 4px 15px rgba(160, 32, 240, 0.4);
+    }
+    #spinBtn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(160, 32, 240, 0.6);
+    }
+    #editBtn {
+        background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+        box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);
+    }
+    #editBtn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(6, 182, 212, 0.6);
+    }
+    #resetBtn {
+        background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+        box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
+    }
+    #resetBtn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(236, 72, 153, 0.6);
+    }
+    button:active {
+        transform: scale(0.95);
+    }
+    button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    #result {
+        margin-top: 30px;
+        font-size: 1.8em;
+        min-height: 60px;
+        color: #ffd700;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        animation: fadeIn 0.5s;
+    }
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        z-index: 100;
+        justify-content: center;
+        align-items: center;
+    }
+    .modal-content {
+        background: linear-gradient(135deg, #2d1b3d 0%, #1d1b2e 100%);
+        padding: 30px;
+        border-radius: 20px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 40px rgba(160, 32, 240, 0.5);
+    }
+    .modal-content h2 {
+        margin-top: 0;
+        color: #d9b3ff;
+    }
+    .modal-content textarea {
+        width: 100%;
+        min-height: 300px;
+        padding: 15px;
+        font-size: 16px;
+        border-radius: 10px;
+        border: 2px solid #a020f0;
+        background: #1d1b2e;
+        color: white;
+        font-family: 'Segoe UI', sans-serif;
+        margin: 15px 0;
+        box-sizing: border-box;
+    }
+    .modal-content button {
+        margin: 5px;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+</head>
+<body>
+
+<h1>💜 วงล้อประจำตัวอาฉีลี่ 💜</h1>
+<p>หมุนล้อเพื่อสุ่มคำทำนายวันนี้!</p>
+<p id="spinCount"></p>
+
+<div id="wheelContainer">
+    <div id="pointer"></div>
+    <canvas id="wheelCanvas" width="400" height="400"></canvas>
+</div>
+
+<div class="button-group">
+    <button id="spinBtn" onclick="spinWheel()">หมุนเลย! ✨</button>
+    <button id="editBtn" onclick="openEditModal()">แก้ไขคำ ✏️</button>
+    <button id="resetBtn" onclick="resetWheel()">รีเซ็ต 🔄</button>
+</div>
+
+<h2 id="result"></h2>
+
+<!-- Modal สำหรับแก้ไขคำ -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <h2>✏️ แก้ไขคำในวงล้อ</h2>
+        <p style="color: #d9b3ff; font-size: 14px;">ใส่คำแต่ละคำในบรรทัดใหม่ (แนะนำ 6-14 คำ)</p>
+        <textarea id="optionsInput"></textarea>
+        <button id="spinBtn" onclick="saveOptions()">บันทึก ✅</button>
+        <button id="resetBtn" onclick="closeEditModal()">ยกเลิก ❌</button>
+    </div>
+</div>
+
+<script>
+    let options = [
+        "โชคดีมาก 💜",
+        "เอา",
+        "ได้เงินกะทันหัน 💸",
+        "ไม่เอา",
+        "มีคนคิดถึงคุณ ✨",
+        "พักไว้พรุ่งนี้",
+        "มีโอกาสใหม่เข้ามา",
+        "ได้ไอเดียดี ๆ 💡",
+        "ไป",
+        "มีเสน่ห์เป็นพิเศษ 💜",
+        "ไม่ไป",
+        "ระวังเรื่องเงินนิดนึง 💰",
+        "พักก่อน",
+        "มีเรื่องดี ๆ จากครอบครัว 🏠"
+    ];
+
+    const defaultOptions = [...options];
+    const MAX_SPINS = 3;
+
+    // ฟังก์ชันจัดการข้อมูลการหมุน
+    function getSpinData() {
+        const today = new Date().toDateString();
+        const data = JSON.parse(localStorage.getItem('wheelSpinData') || '{}');
+        
+        if (data.date !== today) {
+            return { date: today, count: 0 };
+        }
+        return data;
+    }
+
+    function saveSpinData(count) {
+        const today = new Date().toDateString();
+        localStorage.setItem('wheelSpinData', JSON.stringify({ date: today, count }));
+    }
+
+    function updateSpinCount() {
+        const spinData = getSpinData();
+        const remaining = MAX_SPINS - spinData.count;
+        const countDisplay = document.getElementById('spinCount');
+        
+        if (remaining > 0) {
+            countDisplay.innerHTML = `🎲 เหลือโอกาสหมุนวันนี้: <span style="color: #ffd700; font-size: 1.3em;">${remaining}/${MAX_SPINS}</span> ครั้ง`;
+            document.getElementById('spinBtn').disabled = false;
+        } else {
+            countDisplay.innerHTML = `⏰ หมดโอกาสหมุนวันนี้แล้ว! กลับมาใหม่พรุ่งนี้นะคะ 💜`;
+            document.getElementById('spinBtn').disabled = true;
+        }
+    }
+
+    const canvas = document.getElementById("wheelCanvas");
+    const ctx = canvas.getContext("2d");
+    const size = canvas.width / 2;
+    let arc = (2 * Math.PI) / options.length;
+    let angle = 0;
+    let spinning = false;
+
+    const colors = ["#b366ff", "#d9b3ff", "#9d4edd", "#c77dff", "#b088f9", "#da9ff9"];
+
+    function drawWheel() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        arc = (2 * Math.PI) / options.length;
+        
+        for (let i = 0; i < options.length; i++) {
+            const start = angle + i * arc;
+            ctx.beginPath();
+            ctx.fillStyle = colors[i % colors.length];
+            ctx.moveTo(size, size);
+            ctx.arc(size, size, size - 10, start, start + arc);
+            ctx.fill();
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.save();
+            ctx.translate(size, size);
+            ctx.rotate(start + arc / 2);
+            ctx.textAlign = "right";
+            ctx.fillStyle = "#000";
+            ctx.font = "bold 14px sans-serif";
+            ctx.fillText(options[i], size - 20, 5);
+            ctx.restore();
+        }
+
+        // Center circle
+        ctx.beginPath();
+        ctx.fillStyle = "#ffd700";
+        ctx.arc(size, size, 30, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+    }
+
+    // เริ่มต้น
+    updateSpinCount();
+    drawWheel();
+
+    function spinWheel() {
+        if (spinning) return;
+        
+        const spinData = getSpinData();
+        if (spinData.count >= MAX_SPINS) {
+            alert("หมดโอกาสหมุนวันนี้แล้วค่ะ! 💜 กลับมาใหม่พรุ่งนี้นะคะ");
+            return;
+        }
+        
+        spinning = true;
+        document.getElementById("spinBtn").disabled = true;
+        document.getElementById("result").innerText = "";
+
+        // สุ่มความเร็วเริ่มต้นที่แตกต่างกันมาก (0.3 - 0.8)
+        let speed = Math.random() * 0.5 + 0.3;
+        // สุ่มอัตราการชะลอที่แตกต่างกัน (0.993 - 0.998)
+        const slow = Math.random() * 0.005 + 0.993;
+        const minSpeed = 0.001;
+
+        const spin = setInterval(() => {
+            angle += speed;
+            speed *= slow;
+
+            drawWheel();
+
+            if (speed < minSpeed) {
+                clearInterval(spin);
+                spinning = false;
+
+                // บันทึกจำนวนครั้งที่หมุน
+                saveSpinData(spinData.count + 1);
+                updateSpinCount();
+
+                // คำนวณผลลัพธ์จากตำแหน่งลูกศรที่ชี้ (ด้านบนตรงกลาง = 270 องศา หรือ -90 องศา)
+                const pointerAngle = (3 * Math.PI / 2); // 270 degrees (ด้านบน)
+                const normalizedAngle = (pointerAngle - angle) % (2 * Math.PI);
+                const positiveAngle = (normalizedAngle + 2 * Math.PI) % (2 * Math.PI);
+                const index = Math.floor(positiveAngle / arc);
+                const result = options[index];
+
+                setTimeout(() => {
+                    document.getElementById("result").innerText = "ผลลัพธ์: " + result;
+                }, 100);
+            }
+        }, 16);
+    }
+
+    function openEditModal() {
+        document.getElementById("optionsInput").value = options.join("\n");
+        document.getElementById("editModal").style.display = "flex";
+    }
+
+    function closeEditModal() {
+        document.getElementById("editModal").style.display = "none";
+    }
+
+    function saveOptions() {
+        const input = document.getElementById("optionsInput").value;
+        const newOptions = input.split("\n").filter(line => line.trim() !== "");
+        
+        if (newOptions.length < 3) {
+            alert("กรุณาใส่อย่างน้อย 3 คำ!");
+            return;
+        }
+        
+        if (newOptions.length > 20) {
+            alert("ใส่ได้สูงสุด 20 คำเท่านั้น!");
+            return;
+        }
+
+        options = newOptions;
+        arc = (2 * Math.PI) / options.length;
+        angle = 0;
+        document.getElementById("result").innerText = "";
+        drawWheel();
+        closeEditModal();
+    }
+
+    function resetWheel() {
+        if (spinning) return;
+        
+        if (confirm("ต้องการรีเซ็ตวงล้อกลับเป็นค่าเริ่มต้นหรือไม่?")) {
+            options = [...defaultOptions];
+            arc = (2 * Math.PI) / options.length;
+            angle = 0;
+            document.getElementById("result").innerText = "";
+            drawWheel();
+        }
+    }
+
+    // ปิด modal เมื่อคลิกนอกพื้นที่
+    window.onclick = function(event) {
+        const modal = document.getElementById("editModal");
+        if (event.target === modal) {
+            closeEditModal();
+        }
+    }
+</script>
+
+</body>
+</html>
